@@ -26,9 +26,9 @@ public class BasicHybridCache {
    - Parameter name: A name of the cache
    - Parameter config: Cache configuration
    */
-  public init(name: String, config: Config = Config()) {
+  public init(name: String, config: Config = Config(), deleteExpiredFiles: Bool = true) {
     self.name = name
-    self.manager = CacheManager(name: name, config: config)
+    self.manager = CacheManager(name: name, config: config, deleteExpiredFiles: deleteExpiredFiles)
   }
 }
 
