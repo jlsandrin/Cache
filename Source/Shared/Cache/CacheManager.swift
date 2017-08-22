@@ -36,7 +36,7 @@ class CacheManager: NSObject {
    - Parameter name: A name of the cache
    - Parameter config: Cache configuration
    */
-  convenience init(name: String, config: Config = Config()) {
+  convenience init(name: String, config: Config = Config(), deleteExpiredFiles: Bool = true) {
     let name = name
     let frontStorage = MemoryStorage(
       name: name,
@@ -48,7 +48,7 @@ class CacheManager: NSObject {
       maxSize: config.maxDiskSize,
       cacheDirectory: config.cacheDirectory
     )
-    self.init(name: name, frontStorage: frontStorage, backStorage: backStorage, config: config)
+    self.init(name: name, frontStorage: frontStorage, backStorage: backStorage, config: config, deleteExpiredFiles: deleteExpiredFiles)
   }
 
   /**
@@ -57,8 +57,9 @@ class CacheManager: NSObject {
    - Parameter frontStorage: Memory cache instance
    - Parameter backStorage: Disk cache instance
    - Parameter config: Cache configuration
+   - Parameter deleteExpiredFiles: Should delete expired files automatically
    */
-  private init(name: String, frontStorage: MemoryStorage, backStorage: DiskStorage, config: Config) {
+  private init(name: String, frontStorage: MemoryStorage, backStorage: DiskStorage, config: Config, deleteExpiredFiles: Bool) {
     self.frontStorage = frontStorage
     self.backStorage = backStorage
     self.config = config
@@ -77,15 +78,19 @@ class CacheManager: NSObject {
                                      name: NSNotification.Name.NSApplicationDidResignActive, object: nil)
     #else
       notificationCenter.addObserver(self, selector: #selector(clearExpiredDataInFrontStorage),
-                                     name: .UIApplicationDidReceiveMemoryWarning, object: nil)
-      notificationCenter.addObserver(self, selector: #selector(clearExpiredDataInBackStorage),
-                                     name: .UIApplicationWillTerminate, object: nil)
-      notificationCenter.addObserver(self, selector: #selector(CacheManager.applicationDidEnterBackground),
-                                     name: .UIApplicationDidEnterBackground, object: nil)
+                                       name: .UIApplicationDidReceiveMemoryWarning, object: nil)
+      if deleteExpiredFiles {
+        notificationCenter.addObserver(self, selector: #selector(clearExpiredDataInBackStorage),
+                                           name: .UIApplicationWillTerminate, object: nil)
+        notificationCenter.addObserver(self, selector: #selector(CacheManager.applicationDidEnterBackground),
+                                           name: .UIApplicationDidEnterBackground, object: nil)
+      }
     #endif
 
     // Clear expired cached objects.
-    clearExpired(completion: nil)
+    if deleteExpiredFiles {
+      clearExpired(completion: nil)
+    }
   }
 
   /**
